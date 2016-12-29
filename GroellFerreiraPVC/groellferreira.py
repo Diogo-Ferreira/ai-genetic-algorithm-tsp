@@ -17,4 +17,4 @@ def ga_solve(file=None, gui=True, maxtime=0):
 
 
 if __name__ == "__main__":
-    ga_solve(file="res/pb005.txt")
+    ga_solve(file='res/pb005.txt')
