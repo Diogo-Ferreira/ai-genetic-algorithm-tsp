@@ -25,7 +25,7 @@ class Solution:
         :param sol_a:
         :param sol_b:
         :param cut_size:
-        :return: the 2 crossed childs
+        :return: the 2 crossed children
         """
         cross_point_a = random.randrange(0, len(sol_b) - 1 - cut_size)
 
@@ -43,15 +43,15 @@ class Solution:
 
             current_a_from_parent, current_b_from_parent = sol_a[current_city_ix], sol_b[current_city_ix]
 
-            # Is the current cities from b parent in a child ?
+            # Is the current city from b parent in a child ?
             if current_b_from_parent not in child_a:
                 child_a.append(current_b_from_parent)
 
-            # Is the current cities from a parent in b child ?
+            # Is the current city from a parent in b child ?
             if current_a_from_parent not in child_b:
                 child_b.append(current_a_from_parent)
 
-        # Rotates the child, so the first cities are inside the cutting points
+        # Rotates the child, so the first city are inside the cutting points
         Solution.rotate(child_a, cross_point_a)
         Solution.rotate(child_b, cross_point_a)
 
