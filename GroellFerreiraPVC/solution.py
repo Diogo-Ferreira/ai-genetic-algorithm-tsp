@@ -12,48 +12,60 @@ class Solution:
     def __iter__(self):
         return self.path.__iter__()
 
+    def __getitem__(self, item):
+        return self.path[item]
+
     @staticmethod
     def cross_between(sol_a, sol_b, cut_size=3):
         """
-        Gives the cross solutions between 2 solutions
+        OX operator between 2 solutions
+        Help here :
+            http://stackoverflow.com/questions/11782881/how-to-implement-ordered-crossover
+            http://www.dmi.unict.it/mpavone/nc-cs/materiale/moscato89.pdf
         :param sol_a:
         :param sol_b:
         :param cut_size:
-        :return: solution who resulted from the crossment
+        :return: the 2 crossed childs
         """
         cross_point_a = random.randrange(0, len(sol_b) - 1 - cut_size)
 
         cross_point_b = cross_point_a + cut_size
 
-        sequence = sol_b.path[1:4]
+        #cross_point_a, cross_point_b = 2, 5
 
-        sol_a_prepared = ['*' if sol in sequence or ix in range(cross_point_a, cross_point_b) else sol for ix, sol in
-                          enumerate(sol_a)]
+        # Creates our children, with the sub cities between the 2 cutting points
+        child_a, child_b = sol_a[cross_point_a:cross_point_b], sol_b[cross_point_a:cross_point_b]
 
-        print(sol_a_prepared)
+        size = len(sol_a)
 
-        Solution.push_solution(sol_a_prepared, 'B', cross_point_a, cross_point_b)
+        for i in range(size):
+            current_city_ix = (cross_point_b + i) % size
+
+            current_a_from_parent, current_b_from_parent = sol_a[current_city_ix], sol_b[current_city_ix]
+
+            # Is the current cities from b parent in a child ?
+            if current_b_from_parent not in child_a:
+                child_a.append(current_b_from_parent)
+
+            # Is the current cities from a parent in b child ?
+            if current_a_from_parent not in child_b:
+                child_b.append(current_a_from_parent)
+
+        # Rotates the child, so the first cities are inside the cutting points
+        Solution.rotate(child_a, cross_point_a)
+        Solution.rotate(child_b, cross_point_a)
+
+        return child_a, child_b
 
     @staticmethod
-    def push_solution(sol, elem, first_point, second_point):
-        """
-        Replaces the * in the solutions by the item
-        :param sol:
-        :param elem:
-        :param first_point: first point of cut
-        :param second_point: last point of cut (Usually first_point + 3)
-        :return:
-        """
-        sol_left_part = sol[:first_point]
-        sol_right_part = sol[second_point:]
-        print(sol_left_part)
-        print(sol_right_part)
+    def rotate(lst, x):
+        lst[:] = lst[-x:] + lst[:-x]
 
 
 if __name__ == "__main__":
     sol_a = Solution(None)
-    sol_a.path = ['A', 'B', 'C', 'D', 'E', 'F', 'F', 'G', 'H']
+    sol_a.path = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     sol_b = Solution(None)
     sol_b.path = ['B', 'E', 'F', 'H', 'A', 'D', 'G', 'C']
 
-    Solution.cross_between(sol_a, sol_b)
+    print(Solution.cross_between(sol_a, sol_b))
