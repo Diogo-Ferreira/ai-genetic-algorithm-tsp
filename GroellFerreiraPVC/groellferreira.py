@@ -12,12 +12,14 @@ def ga_solve(file=None, gui=True, maxtime=0):
     else:
         cities = import_cities_from_file(file)
 
-    problem = Problem(cities)
+    problem = Problem(cities=cities)
+    evolution_loop(problem=problem, nb_solutions=100, gui=gui)
+    while True:
+        pass
 
-    [print(city) for city in problem]
 
 
-def evolution_loop(problem, nb_solutions, max_iter=10):
+def evolution_loop(problem, nb_solutions,gui, max_iter=50):
     # Create solutions
     solutions = []
     for i in range(nb_solutions):
@@ -28,15 +30,19 @@ def evolution_loop(problem, nb_solutions, max_iter=10):
     for i in range(max_iter):
         population.selection()
         population.crossover()
-        #population.mutation()
+        population.mutation()
+        population.find_best_solution()
 
-        print(population)
+        print(population.best_solution)
+        gui.send_solution(population.best_solution)
+
+        #print(population)
 
 
 
 if __name__ == "__main__":
-    # ga_solve(file='res/pb005.txt')
+    ga_solve(file='res/pb010.txt')
 
-    cities = import_cities_from_file(file='res/pb005.txt')
+    '''cities = import_cities_from_file(file='res/pb005.txt')
     my_fucking_problem = Problem(cities=cities)
-    evolution_loop(problem=my_fucking_problem, nb_solutions=10)
+    evolution_loop(problem=my_fucking_problem, nb_solutions=24)'''

@@ -13,13 +13,14 @@ class Solution(object):
         return len(self.path)
 
     def __iter__(self):
-        return self.path.__iter__()
+        return [self.problem.cities[city_name] for city_name in self.path].__iter__()
 
     def __getitem__(self, item):
         return self.path[item]
 
     def __str__(self):
-        return str(self.path)
+        return "%s : %s" % (str(self.path) ,self.fitness)
+
 
     @staticmethod
     def cross_between(sol_a, sol_b, cut_size=3):
@@ -61,7 +62,7 @@ class Solution(object):
         Solution.rotate(child_a, cross_point_a)
         Solution.rotate(child_b, cross_point_a)
 
-        return child_a, child_b
+        return Solution(sol_a.problem,child_a), Solution(sol_b.problem,child_b)
 
     def mutate(self):
         city_a, city_b = random.sample(range(0, len(self)), 2)

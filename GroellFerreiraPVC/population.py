@@ -6,6 +6,7 @@ class Population:
 
     def __init__(self, solutions=[]):
         self.solutions = solutions
+        self.best_solution = None
 
     def __str__(self):
         return str(self.solutions)
@@ -28,3 +29,7 @@ class Population:
     def mutation(self):
         for sol in self.solutions:
             sol.mutate()
+
+    def find_best_solution(self):
+        self.best_solution = min(self.solutions, key=lambda e: e.fitness)
+

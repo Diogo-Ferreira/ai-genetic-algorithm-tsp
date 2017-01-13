@@ -50,13 +50,16 @@ class Gui:
         self.screen.fill(0)
         for pos in positions:
             pygame.draw.circle(self.screen, self.city_color, pos, self.city_radius)
+        pygame.draw.lines(self.screen, self.city_color, True, positions)
+
         text = self.font.render("Nombre: %i" % len(positions), True, self.font_color)
         textRect = text.get_rect()
         self.screen.blit(text, textRect)
         pygame.display.flip()
 
-    def send_solution(self, cities):
-        pass
+    def send_solution(self, solution):
+        self.solution = [(int(city.x),int(city.y)) for city in solution]
+        self.draw(self.solution)
 
 
 if __name__ == "__main__":
