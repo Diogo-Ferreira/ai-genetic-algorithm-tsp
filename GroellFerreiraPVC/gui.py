@@ -46,11 +46,12 @@ class Gui:
 
         return cities
 
-    def draw(self, positions):
+    def draw(self, positions,draw_lines=False):
         self.screen.fill(0)
         for pos in positions:
             pygame.draw.circle(self.screen, self.city_color, pos, self.city_radius)
-        pygame.draw.lines(self.screen, self.city_color, True, positions)
+        if len(positions) > 1 and draw_lines:
+            pygame.draw.lines(self.screen, self.city_color, True, positions)
 
         text = self.font.render("Nombre: %i" % len(positions), True, self.font_color)
         textRect = text.get_rect()
@@ -59,7 +60,7 @@ class Gui:
 
     def send_solution(self, solution):
         self.solution = [(int(city.x),int(city.y)) for city in solution]
-        self.draw(self.solution)
+        self.draw(self.solution,draw_lines=True)
 
 
 if __name__ == "__main__":
