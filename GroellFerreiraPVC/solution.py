@@ -1,10 +1,13 @@
 import random
 
 from GroellFerreiraPVC.data_import import import_cities_from_file
-#from GroellFerreiraPVC.problem import Problem
+
+
+# from GroellFerreiraPVC.problem import Problem
 
 def rotate(lst, x):
     lst[:] = lst[-x:] + lst[:-x]
+
 
 def cross_between(sol_a, sol_b, cross_point_a, cross_point_b, cut_size=3):
     """
@@ -50,6 +53,7 @@ def cross_between(sol_a, sol_b, cross_point_a, cross_point_b, cut_size=3):
 
     return Solution(sol_a.problem, child_a), Solution(sol_b.problem, child_b)
 
+
 class Solution(object):
     indexes = [random.randrange(0, 20) for _ in range(20)]
     current_index = 0
@@ -57,7 +61,8 @@ class Solution(object):
     def __init__(self, problem, path=[]):
         self.problem = problem
         self.path = path
-        self._fitness = None
+        self.fitness = 0
+        self.compute_fitness()
 
     def __len__(self):
         return len(self.path)
@@ -65,33 +70,32 @@ class Solution(object):
     def __iter__(self):
         return [self.problem.cities[city_name] for city_name in self.path].__iter__()
 
-    def __getitem__(self, item):
-        return self.path[item]
-
     def __str__(self):
-        return "%s : %s" % (str(self.path) ,self.fitness())
-
-
-
+        return "%s : %s" % (str(self.fitness), str(self.path))
 
     def mutate(self):
         city_a, city_b = random.sample(range(0, len(self)), 2)
-        self.path[city_a], self.path[city_b] = self[city_b], self[city_a]
+        chromo = self.path
+        chromo[city_a], chromo[city_b] = self.path[city_b], self.path[city_a]
+        return Solution(problem=self.problem, path=chromo)
 
-    def fitness(self):
-        if not self._fitness:
-            total = 0
-            last_city = self.problem.cities[self.path[0]]
-            for city_name in self.path[1:]:
-                current = self.problem.cities[city_name]
-                total += current.pos.distance_to(last_city.pos)
-                last_city = current
-            total += last_city.pos.distance_to(self.problem.cities[self.path[0]].pos)
-            self._fitness = total
-        return self._fitness
+    def reverse_mutate(self):
+        city_a, city_b = random.sample(range(0, len(self.path)), 2)
+        return Solution(problem=self.problem, path=self.reverse_sublist(self.path, city_a, city_b))
 
+    def reverse_sublist(self, lst, start, end):
+        lst[start:end] = lst[start:end][::-1]
+        return lst
 
-
+    def compute_fitness(self):
+        total = 0
+        last_city = self.problem.cities[self.path[0]]
+        for city_name in self.path[1:]:
+            current = self.problem.cities[city_name]
+            total += current.pos.distance_to(last_city.pos)
+            last_city = current
+        total += last_city.pos.distance_to(self.problem.cities[self.path[0]].pos)
+        self.fitness = total
 
 
 if __name__ == "__main__":
@@ -103,4 +107,3 @@ if __name__ == "__main__":
 
     print(sol_a.fitness)
     """
-
