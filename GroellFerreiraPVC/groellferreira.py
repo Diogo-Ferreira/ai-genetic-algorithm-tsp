@@ -62,14 +62,9 @@ def evolution_loop(problem, nb_solutions,gui):
         gui.send_solution(population.best_solution)
 
     gui.send_solution(current_best_solution)
-        #print(population)
 
     print(" BEST SOLUTION EVER BIIIM")
     print(current_best_solution)
 
 if __name__ == "__main__":
-    ga_solve(file='res/pb100.txt')
-
-    '''cities = import_cities_from_file(file='res/pb005.txt')
-    my_fucking_problem = Problem(cities=cities)
-    evolution_loop(problem=my_fucking_problem, nb_solutions=24)'''
+    ga_solve(file='res/pb050.txt')

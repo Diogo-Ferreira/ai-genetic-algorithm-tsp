@@ -1,9 +1,5 @@
 import random
 
-from GroellFerreiraPVC.data_import import import_cities_from_file
-
-
-# from GroellFerreiraPVC.problem import Problem
 
 def rotate(lst, x):
     lst[:] = lst[-x:] + lst[:-x]
@@ -20,14 +16,6 @@ def cross_between(sol_a, sol_b, cross_point_a, cross_point_b, cut_size=3):
     :param cut_size:
     :return: the 2 crossed children
     """
-    # cut_size = int(len(sol_a.path)/2)
-    # cross_point_a = Solution.indexes[Solution.current_index%(len(sol_b) - 1 - cut_size)]
-    # cross_point_a = random.randrange(0, len(sol_b) - 1 - cut_size)
-
-
-    # cross_point_b = cross_point_a + cut_size
-
-    # cross_point_a, cross_point_b = 2, 5
 
     # Creates our children, with the sub cities between the 2 cutting points
     child_a, child_b = sol_a.path[cross_point_a:cross_point_b], sol_b.path[cross_point_a:cross_point_b]

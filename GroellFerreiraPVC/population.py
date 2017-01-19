@@ -5,9 +5,6 @@ import random
 
 
 class Population:
-    #EVOLUTION_STEP_PERCENTAGE = 0.4
-    #MUTATION_PERCENTAGE = 0.35
-
     EVOLUTION_STEP_PERCENTAGE = 0.4
     MUTATION_PERCENTAGE = 0.35
 
@@ -32,9 +29,6 @@ class Population:
     def crossover(self):
         children = []
         choices = self.solutions
-        #self.cut_a = random.randint(0,len(self.solutions[0])-3)
-        #self.cut_b = random.randint(self.cut_a+1,len(self.solutions[0]))
-
 
         for sol_ix in range(len(self.solutions)):
             child_a, child_b = cross_between(self.solutions[sol_ix], self.solutions[(sol_ix + 1) % len(self.solutions)],
@@ -43,26 +37,9 @@ class Population:
             children.append(child_b)
         self.solutions = children
 
-        """
-        for _ in range(len(self.solutions)):
-           candidate_a, candidate_b = random.choice(self.solutions),random.choice(self.solutions)
-           child_a, child_b = cross_between(candidate_a, candidate_b,self.cut_a,self.cut_b)
-           children.append(child_a)
-           children.append(child_b)
-        self.solutions = children
-        """
-
-        """
-        for sol_ix in range(len(self.solutions)):
-            child_a,child_b = Solution.cross_between(self.solutions[sol_ix],self.solutions[(sol_ix+1) % len(self.solutions)])
-            childs.append(child_a)
-            childs.append(child_b)
-        self.solutions = childs
-        """
-
     def mutation(self):
         n = int(len(self.solutions) * self.MUTATION_PERCENTAGE)
-        indexes = random.sample(range(0,len(self.solutions)), n)
+        indexes = random.sample(range(0, len(self.solutions)), n)
         for ix in indexes:
             self.solutions.append(self.solutions[ix].reverse_mutate())
         self.sorted = False
