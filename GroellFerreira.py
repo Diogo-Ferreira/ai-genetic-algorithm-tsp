@@ -1,3 +1,4 @@
+import argparse
 import time
 import pygame
 from pygame.locals import KEYDOWN, QUIT, MOUSEBUTTONDOWN, K_RETURN, K_ESCAPE
@@ -8,6 +9,8 @@ from _operator import attrgetter
 
 # in seconds
 MAX_STAGNATION = 3000
+
+global_gui = None
 
 """
 ========================================================================================================================
@@ -90,7 +93,7 @@ class Gui(object):
 
         pygame.init()
         self.window = pygame.display.set_mode((self.screen_x, self.screen_y))
-        pygame.display.set_caption('Exemple')
+        pygame.display.set_caption('IA TP2 PVC FERREIRA & GROELL')
         self.screen = pygame.display.get_surface()
         self.font = pygame.font.Font(None, 30)
 
@@ -150,27 +153,29 @@ class Population(object):
 
     def __init__(self, solutions=[]):
         self.solutions = solutions
-        self.best_solution = None
         self.cut_a = int(len(self.solutions[0]) * 0.25)
         self.cut_b = int(len(self.solutions[0]) * 0.75)
-        self.sorted = False
         self.EVOLUTION_STEP_PERCENTAGE = 0.4
         self.MUTATION_PERCENTAGE = 0.35
+        self.selected_size = len(self.solutions)
+        self.current_best = None
 
     def power_up(self):
-        self.EVOLUTION_STEP_PERCENTAGE = 0.3
+        self.EVOLUTION_STEP_PERCENTAGE = 0.35
         self.MUTATION_PERCENTAGE = 0.65
+
+    def sort_and_get_best_solution(self):
+        self.solutions = sorted(self.solutions, key=attrgetter('fitness'))
+        if len(self.solutions) > 0:
+            self.current_best = self.solutions[0]
+        return self.current_best
 
     def __str__(self):
         return str(self.solutions)
 
     def selection(self):
-        selected_size = int(len(self.solutions) * self.EVOLUTION_STEP_PERCENTAGE)
-
-        if not self.sorted:
-            self.solutions = sorted(self.solutions, key=attrgetter('fitness'))[:selected_size]
-        else:
-            self.solutions = self.solutions[:selected_size]
+        self.selected_size = int(len(self.solutions) * self.EVOLUTION_STEP_PERCENTAGE)
+        self.solutions = self.solutions[:self.selected_size]
 
     def crossover(self):
         children = []
@@ -191,26 +196,11 @@ class Population(object):
         indexes = random.sample(range(0, len(self.solutions)), n)
         for ix in indexes:
             self.solutions.append(self.solutions[ix].reverse_mutate())
-        self.sorted = False
-
-    def find_best_solution(self):
-        if len(self.solutions) > 0:
-            self.solutions = sorted(self.solutions, key=attrgetter('fitness'))
-            self.best_solution = self.solutions[0]
-            self.sorted = True
-        else:
-            return self.best_solution
 
 
 class Problem(object):
     def __init__(self, cities={}):
         self.cities = cities
-
-    def __len__(self):
-        return len(self.cities)
-
-    def __iter__(self):
-        return self.cities.items().__iter__()
 
     def create_solution(self):
         path = list(self.cities.keys())
@@ -228,15 +218,14 @@ class Solution(object):
     def __len__(self):
         return len(self.path)
 
-    def __iter__(self):
-        return [self.problem.cities[city_name] for city_name in self.path].__iter__()
-
     def __str__(self):
         return "%s : %s" % (str(self.fitness), str(self.path))
 
     def reverse_mutate(self):
         city_a, city_b = random.sample(range(0, len(self.path)), 2)
-        return Solution(problem=self.problem, path=reverse_sublist(self.path, city_a, city_b))
+        new_path = reverse_sublist(self.path, city_a, city_b)
+        self.compute_fitness()
+        return Solution(problem=self.problem, path=new_path)
 
     def compute_fitness(self):
         total = 0
@@ -259,30 +248,32 @@ class City(object):
 
 
 def ga_solve(file=None, gui=True, max_time=60):
-    if gui:
-        gui = Gui()
-    else:
-        gui = None
+    global global_gui
 
-    if file is None:
-        cities = import_cities_from_gui(gui.get_cities())
-    else:
+    if gui and not global_gui:
+        global_gui = Gui()
+
+    if file:
         cities = import_cities_from_file(file)
+    else:
+        cities = import_cities_from_gui(global_gui.get_cities())
 
     problem = Problem(cities=cities)
 
-    best_solution = evolution_loop(problem=problem, nb_solutions=20, gui=gui, max_time=max_time)
+    best_solution = evolution_loop(problem=problem, nb_solutions=20, max_time=max_time)
 
     return best_solution.fitness, best_solution.path
 
 
-def evolution_loop(problem, nb_solutions, gui, max_time):
+def evolution_loop(problem, nb_solutions, max_time):
     # Create solutions
     solutions = []
     current_time_left = max_time
     current_stagnation = 0
     current_best_solution = None
     boosted = False
+
+    global global_gui
 
     for i in range(nb_solutions):
         solutions.append(problem.create_solution())
@@ -294,37 +285,46 @@ def evolution_loop(problem, nb_solutions, gui, max_time):
     while current_time_left > 0 and current_stagnation < MAX_STAGNATION:
         start_time = time.time()
 
+        last_solution = population.sort_and_get_best_solution()
         population.selection()
         population.crossover()
         population.mutation()
 
-        last_solution = population.best_solution
-        population.find_best_solution()
+        population.sort_and_get_best_solution()
 
         elapsed_time = time.time() - start_time
         current_time_left -= elapsed_time
 
-        if last_solution and last_solution.fitness == population.best_solution.fitness:
+        if last_solution and last_solution.fitness == population.sort_and_get_best_solution().fitness:
             current_stagnation += 1
         else:
             current_stagnation = 0
 
-        if not current_best_solution or population.best_solution.fitness < current_best_solution.fitness:
-            current_best_solution = population.best_solution
+        if not current_best_solution or population.sort_and_get_best_solution().fitness < current_best_solution.fitness:
+            current_best_solution = population.sort_and_get_best_solution()
 
-        if gui:
-            gui.send_solution(population.best_solution)
+        if global_gui:
+            global_gui.send_solution(population.sort_and_get_best_solution())
 
         # boost les coefficients de mutation et selection lorsqu'il reste peu de temps, afin de maximiser les chances
         if not boosted and current_time_left < quart_of_time:
             population.power_up()
             boosted = True
 
-        # print(current_best_solution)
+            # print(current_best_solution)
     return current_best_solution
 
 
 if __name__ == "__main__":
-    pass
-    # ga_solve(gui=True)
-    # print(ga_solve(file='data/pb100.txt',max_time=90,gui=False))
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--nogui', action='store_true')
+    parser.add_argument('--maxtime', default=60)
+    parser.add_argument('filename')
+
+    args = vars(parser.parse_args())
+
+    print(ga_solve(file=args['filename'], gui=not args['nogui'], max_time=int(args['maxtime'])))
+
+    if not args['nogui']:
+        global_gui.wait()
