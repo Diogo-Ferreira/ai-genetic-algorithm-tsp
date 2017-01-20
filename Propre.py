@@ -7,8 +7,6 @@ import random
 from _operator import attrgetter, methodcaller
 
 # in seconds
-MAX_TIME = 20
-
 MAX_STAGNATION = 3000
 
 
@@ -242,14 +240,12 @@ def import_cities_from_gui(gui_data):
     return {'test %s %s' % (x, y): City('test %s %s' % (x, y), x, y) for x, y in gui_data}
 
 
-def ga_solve(file=None, gui=True, maxtime=MAX_TIME):
+def ga_solve(file=None, gui=True, max_time=60):
 
     if gui:
         gui = Gui()
     else:
         gui = None
-
-    MAX_TIME = maxtime
 
     if file is None:
         cities = import_cities_from_gui(gui.get_cities())
@@ -257,7 +253,7 @@ def ga_solve(file=None, gui=True, maxtime=MAX_TIME):
         cities = import_cities_from_file(file)
 
     problem = Problem(cities=cities)
-    best_solution = evolution_loop(problem=problem, nb_solutions=20, gui=gui)
+    best_solution = evolution_loop(problem=problem, nb_solutions=20, gui=gui,max_time=max_time)
 
     if gui:
         gui.wait()
@@ -265,17 +261,20 @@ def ga_solve(file=None, gui=True, maxtime=MAX_TIME):
     return best_solution.fitness, best_solution.path
 
 
-def evolution_loop(problem, nb_solutions, gui):
+def evolution_loop(problem, nb_solutions, gui,max_time):
     # Create solutions
     solutions = []
-    current_time_left = MAX_TIME
+    current_time_left = max_time
     current_stagnation = 0
     current_best_solution = None
+    boost = False
 
     for i in range(nb_solutions):
         solutions.append(problem.create_solution())
 
     population = Population(solutions=solutions)
+
+    quart_of_time = max_time / 4
 
     while current_time_left > 0 and current_stagnation < MAX_STAGNATION:
         start_time = time.time()
@@ -297,18 +296,19 @@ def evolution_loop(problem, nb_solutions, gui):
         if not current_best_solution or population.best_solution.fitness < current_best_solution.fitness:
             current_best_solution = population.best_solution
 
-        #print(population.best_solution)
         if gui:
             gui.send_solution(population.best_solution)
-    if gui:
-        gui.send_solution(current_best_solution)
 
-    #print(" BEST SOLUTION EVER BIIIM")
-    #print(current_best_solution)
+        if not boost and current_time_left < quart_of_time:
+            Population.EVOLUTION_STEP_PERCENTAGE = 0.3
+            Population.MUTATION_PERCENTAGE = 0.65
+            boost = True
 
+        #print(current_best_solution)
     return current_best_solution
 
 
 if __name__ == "__main__":
-    ga_solve(gui=True)
-    #print(ga_solve(file='data/pb100.txt',maxtime=20,gui=False))
+    pass
+    #ga_solve(gui=True)
+    #print(ga_solve(file='data/pb100.txt',max_time=90,gui=False))
