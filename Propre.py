@@ -4,17 +4,37 @@ from pygame.locals import KEYDOWN, QUIT, MOUSEBUTTONDOWN, K_RETURN, K_ESCAPE
 import sys
 from pygame.math import Vector2
 import random
-from _operator import attrgetter, methodcaller
+from _operator import attrgetter
 
 # in seconds
 MAX_STAGNATION = 3000
+
+"""
+========================================================================================================================
+####################################################FONCTIONS###########################################################
+========================================================================================================================
+"""
+
+
+def import_cities_from_file(file):
+    with open(file) as f:
+        return {line.split()[0]: City(*line.split()) for line in f}
+
+
+def import_cities_from_gui(gui_data):
+    return {'test %s %s' % (x, y): City('test %s %s' % (x, y), x, y) for x, y in gui_data}
 
 
 def rotate(lst, x):
     lst[:] = lst[-x:] + lst[:-x]
 
 
-def cross_between(sol_a, sol_b, cross_point_a, cross_point_b, cut_size=3):
+def reverse_sublist(lst, start, end):
+    lst[start:end] = lst[start:end][::-1]
+    return lst
+
+
+def cross_between(sol_a, sol_b, cross_point_a, cross_point_b):
     """
     OX operator between 2 solutions
     Help here :
@@ -51,7 +71,14 @@ def cross_between(sol_a, sol_b, cross_point_a, cross_point_b, cut_size=3):
     return Solution(sol_a.problem, child_a), Solution(sol_b.problem, child_b)
 
 
-class Gui:
+"""
+========================================================================================================================
+######################################################CLASSES###########################################################
+========================================================================================================================
+"""
+
+
+class Gui(object):
     def __init__(self):
         self.screen_x = 500
         self.screen_y = 500
@@ -113,11 +140,11 @@ class Gui:
         pygame.display.flip()
 
     def send_solution(self, solution):
-        self.solution = [(int(city.x), int(city.y)) for city in solution]
-        self.draw(self.solution, draw_lines=True)
+        solution = [(int(city.pos.x), int(city.pos.y)) for city in solution]
+        self.draw(solution, draw_lines=True)
 
 
-class Population:
+class Population(object):
     EVOLUTION_STEP_PERCENTAGE = 0.4
     MUTATION_PERCENTAGE = 0.35
 
@@ -127,6 +154,12 @@ class Population:
         self.cut_a = int(len(self.solutions[0]) * 0.25)
         self.cut_b = int(len(self.solutions[0]) * 0.75)
         self.sorted = False
+        self.EVOLUTION_STEP_PERCENTAGE = 0.4
+        self.MUTATION_PERCENTAGE = 0.35
+
+    def power_up(self):
+        self.EVOLUTION_STEP_PERCENTAGE = 0.3
+        self.MUTATION_PERCENTAGE = 0.65
 
     def __str__(self):
         return str(self.solutions)
@@ -141,13 +174,16 @@ class Population:
 
     def crossover(self):
         children = []
-        choices = self.solutions
-
         for sol_ix in range(len(self.solutions)):
-            child_a, child_b = cross_between(self.solutions[sol_ix], self.solutions[(sol_ix + 1) % len(self.solutions)],
-                                             self.cut_a, self.cut_b)
+            child_a, child_b = cross_between(
+                self.solutions[sol_ix],
+                self.solutions[(sol_ix + 1) % len(self.solutions)],
+                self.cut_a, self.cut_b
+            )
+
             children.append(child_a)
             children.append(child_b)
+
         self.solutions = children
 
     def mutation(self):
@@ -166,7 +202,7 @@ class Population:
             return self.best_solution
 
 
-class Problem:
+class Problem(object):
     def __init__(self, cities={}):
         self.cities = cities
 
@@ -183,9 +219,6 @@ class Problem:
 
 
 class Solution(object):
-    indexes = [random.randrange(0, 20) for _ in range(20)]
-    current_index = 0
-
     def __init__(self, problem, path=[]):
         self.problem = problem
         self.path = path
@@ -203,11 +236,7 @@ class Solution(object):
 
     def reverse_mutate(self):
         city_a, city_b = random.sample(range(0, len(self.path)), 2)
-        return Solution(problem=self.problem, path=self.reverse_sublist(self.path, city_a, city_b))
-
-    def reverse_sublist(self, lst, start, end):
-        lst[start:end] = lst[start:end][::-1]
-        return lst
+        return Solution(problem=self.problem, path=reverse_sublist(self.path, city_a, city_b))
 
     def compute_fitness(self):
         total = 0
@@ -220,28 +249,16 @@ class Solution(object):
         self.fitness = total
 
 
-class City:
+class City(object):
     def __init__(self, name, x, y):
         self.name = name
-        self.x = float(x)
-        self.y = float(y)
         self.pos = Vector2(float(x), float(y))
 
-    def __str__(self, *args, **kwargs):
-        return "%s x: %s y: %s" % (self.name, self.x, self.y)
-
-
-def import_cities_from_file(file):
-    with open(file) as f:
-        return {line.split()[0]: City(*line.split()) for line in f}
-
-
-def import_cities_from_gui(gui_data):
-    return {'test %s %s' % (x, y): City('test %s %s' % (x, y), x, y) for x, y in gui_data}
+    def __str__(self):
+        return "%s x: %s y: %s" % (self.name, self.pos.x, self.pos.y)
 
 
 def ga_solve(file=None, gui=True, max_time=60):
-
     if gui:
         gui = Gui()
     else:
@@ -253,21 +270,19 @@ def ga_solve(file=None, gui=True, max_time=60):
         cities = import_cities_from_file(file)
 
     problem = Problem(cities=cities)
-    best_solution = evolution_loop(problem=problem, nb_solutions=20, gui=gui,max_time=max_time)
 
-    if gui:
-        gui.wait()
+    best_solution = evolution_loop(problem=problem, nb_solutions=20, gui=gui, max_time=max_time)
 
     return best_solution.fitness, best_solution.path
 
 
-def evolution_loop(problem, nb_solutions, gui,max_time):
+def evolution_loop(problem, nb_solutions, gui, max_time):
     # Create solutions
     solutions = []
     current_time_left = max_time
     current_stagnation = 0
     current_best_solution = None
-    boost = False
+    boosted = False
 
     for i in range(nb_solutions):
         solutions.append(problem.create_solution())
@@ -282,6 +297,7 @@ def evolution_loop(problem, nb_solutions, gui,max_time):
         population.selection()
         population.crossover()
         population.mutation()
+
         last_solution = population.best_solution
         population.find_best_solution()
 
@@ -299,16 +315,16 @@ def evolution_loop(problem, nb_solutions, gui,max_time):
         if gui:
             gui.send_solution(population.best_solution)
 
-        if not boost and current_time_left < quart_of_time:
-            Population.EVOLUTION_STEP_PERCENTAGE = 0.3
-            Population.MUTATION_PERCENTAGE = 0.65
-            boost = True
+        # boost les coefficients de mutation et selection lorsqu'il reste peu de temps, afin de maximiser les chances
+        if not boosted and current_time_left < quart_of_time:
+            population.power_up()
+            boosted = True
 
-        #print(current_best_solution)
+        # print(current_best_solution)
     return current_best_solution
 
 
 if __name__ == "__main__":
     pass
-    #ga_solve(gui=True)
-    #print(ga_solve(file='data/pb100.txt',max_time=90,gui=False))
+    # ga_solve(gui=True)
+    # print(ga_solve(file='data/pb100.txt',max_time=90,gui=False))
