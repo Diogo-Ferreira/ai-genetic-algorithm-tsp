@@ -16,7 +16,7 @@ from pygame.math import Vector2
 import random
 from _operator import attrgetter
 
-# nombres de solutions identique à la suite pour considère qu'on "stagne", doit être assez élèves du faites
+# nombre de solutions identiques à la suite pour considère qu'on "stagne", doit être assez élevées dû au fait
 # qu'on utilise beaucoup d'aléatoire et que cela génère beaucoup de bruit
 MAX_STAGNATION = 3000
 
@@ -66,11 +66,11 @@ def cross_between(sol_a, sol_b, cross_point_a, cross_point_b):
 
         current_a_from_parent, current_b_from_parent = sol_a.path[current_city_ix], sol_b.path[current_city_ix]
 
-        # Est-ce la ville courant du parent b se trouve dans l'enfant a ?
+        # Est-ce la ville courante du parent b se trouve dans l'enfant a ?
         if current_b_from_parent not in child_a:
             child_a.append(current_b_from_parent)
 
-            # Est-ce la ville courant du parent a se trouve dans l'enfant b ?
+            # Est-ce la ville courante du parent a se trouve dans l'enfant b ?
         if current_a_from_parent not in child_b:
             child_b.append(current_a_from_parent)
 
@@ -156,13 +156,13 @@ class Gui(object):
 
 class Population(object):
     """
-    Définit une population, qui est un essemble de solutions
+    Définit une population qui est un ensemble de solutions
     """
 
-    # le nombre de solutions qu'on prends à chaque séléction
+    # le nombre de solutions qu'on prend à chaque sélection
     EVOLUTION_STEP_PERCENTAGE = 0.4
 
-    # le nombre d'individus à mutés à chaque mutation
+    # le nombre d'individus à muter à chaque mutation
     MUTATION_PERCENTAGE = 0.35
 
     def __init__(self, solutions=[]):
@@ -177,17 +177,17 @@ class Population(object):
     def power_up(self):
         """
         Tente d'augmenter les chances de variété
-        en boostant les mutations, attention la
-        fenêtre de séléction est réduite pour les performances.
+        en boostant les mutations. Attention, la
+        fenêtre de sélection est réduite pour les performances.
         """
         self.EVOLUTION_STEP_PERCENTAGE = 0.35
         self.MUTATION_PERCENTAGE = 0.65
 
     def sort_and_get_best_solution(self):
         """
-        Tris les solutions et retourne la meilleur, attention
-        cette méthode doit être appeler à chaque fois avant la
-        séléction !
+        Trie les solutions et retourne la meilleur. Attention,
+        cette méthode doit être appelée à chaque fois avant la
+        sélection !
         :return:
         """
         self.solutions = sorted(self.solutions, key=attrgetter('fitness'))
@@ -200,8 +200,8 @@ class Population(object):
 
     def selection(self):
         """
-        Séléction elliste, attention à appeler
-         sort_and_get_best_solution pour effectuer le tris.
+        Sélection élitiste. Attention à appeler
+         sort_and_get_best_solution pour effectuer le tri.
         :return:
         """
         self.selected_size = int(len(self.solutions) * self.EVOLUTION_STEP_PERCENTAGE)
@@ -237,8 +237,8 @@ class Population(object):
 
 class Problem(object):
     """
-    Un problème créer une solution et
-    contiens une références à toutes les villes
+    Un problème crée une solution et
+    contient une référence à toutes les villes
     dans un dictionnaire cities.
     """
     def __init__(self, cities={}):
@@ -277,9 +277,9 @@ class Solution(object):
 
     def reverse_mutate(self):
         """
-        Effectue la mutation, qui inverse le chemin
+        Effectue la mutation qui inverse le chemin
         entre 2 villes randoms.
-        :return: nouvelles solution muté
+        :return: nouvelles solutions mutées
         """
         city_a, city_b = random.sample(range(0, len(self.path)), 2)
         new_path = reverse_sublist(self.path, city_a, city_b)
@@ -288,7 +288,7 @@ class Solution(object):
 
     def compute_fitness(self):
         """
-        Calcule le score courant de la solution, remarquez qu'on utilise
+        Calcule le score courant de la solution. Remarquez qu'on utilise
         les vec2 de pygame pour augmenter les performances du calcul de distance
         :return:
         """
@@ -339,7 +339,7 @@ def evolution_loop(problem, nb_solutions, max_time):
 
     global global_gui
 
-    # Créations des solutions
+    # Création des solutions
     for i in range(nb_solutions):
         solutions.append(problem.create_solution())
 
