@@ -1,3 +1,12 @@
+"""
+
+Implémentation du problème du voyageur de commerce à l'aide d'un algorithme génétique.
+
+Etudiants: Groell Sarah, Ferreira Venancio Diogo
+
+
+"""
+
 import argparse
 import time
 import pygame
@@ -7,9 +16,11 @@ from pygame.math import Vector2
 import random
 from _operator import attrgetter
 
-# in seconds
+# nombres de solutions identique à la suite pour considère qu'on "stagne", doit être assez élèves du faites
+# qu'on utilise beaucoup d'aléatoire et que cela génère beaucoup de bruit
 MAX_STAGNATION = 3000
 
+# instance de l'interface graphique
 global_gui = None
 
 """
@@ -39,17 +50,13 @@ def reverse_sublist(lst, start, end):
 
 def cross_between(sol_a, sol_b, cross_point_a, cross_point_b):
     """
-    OX operator between 2 solutions
-    Help here :
-        http://stackoverflow.com/questions/11782881/how-to-implement-ordered-crossover
-        http://www.dmi.unict.it/mpavone/nc-cs/materiale/moscato89.pdf
-    :param sol_a:
-    :param sol_b:
-    :param cut_size:
-    :return: the 2 crossed children
+    croisement d'ordre 1 entre 2 solutions
+    :param sol_a: première solution
+    :param sol_b: seconde solution
+    :return: 2 solutions enfants croisées
     """
 
-    # Creates our children, with the sub cities between the 2 cutting points
+    # Créer les enfants, avec les sous villes entre les 2 points de coupe
     child_a, child_b = sol_a.path[cross_point_a:cross_point_b], sol_b.path[cross_point_a:cross_point_b]
 
     size = len(sol_a)
@@ -59,15 +66,15 @@ def cross_between(sol_a, sol_b, cross_point_a, cross_point_b):
 
         current_a_from_parent, current_b_from_parent = sol_a.path[current_city_ix], sol_b.path[current_city_ix]
 
-        # Is the current city from b parent in a child ?
+        # Est-ce la ville courant du parent b se trouve dans l'enfant a ?
         if current_b_from_parent not in child_a:
             child_a.append(current_b_from_parent)
 
-        # Is the current city from a parent in b child ?
+            # Est-ce la ville courant du parent a se trouve dans l'enfant b ?
         if current_a_from_parent not in child_b:
             child_b.append(current_a_from_parent)
 
-    # Rotates the child, so the first city are inside the cutting points
+    # Pivote les enfants, comme ça la première ville commence au point de coupe
     rotate(child_a, cross_point_a)
     rotate(child_b, cross_point_a)
 
@@ -143,12 +150,19 @@ class Gui(object):
         pygame.display.flip()
 
     def send_solution(self, solution):
-        solution = [(int(city.pos.x), int(city.pos.y)) for city in solution]
+        solution = [sol for sol in solution]
         self.draw(solution, draw_lines=True)
 
 
 class Population(object):
+    """
+    Définit une population, qui est un essemble de solutions
+    """
+
+    # le nombre de solutions qu'on prends à chaque séléction
     EVOLUTION_STEP_PERCENTAGE = 0.4
+
+    # le nombre d'individus à mutés à chaque mutation
     MUTATION_PERCENTAGE = 0.35
 
     def __init__(self, solutions=[]):
@@ -161,10 +175,21 @@ class Population(object):
         self.current_best = None
 
     def power_up(self):
+        """
+        Tente d'augmenter les chances de variété
+        en boostant les mutations, attention la
+        fenêtre de séléction est réduite pour les performances.
+        """
         self.EVOLUTION_STEP_PERCENTAGE = 0.35
         self.MUTATION_PERCENTAGE = 0.65
 
     def sort_and_get_best_solution(self):
+        """
+        Tris les solutions et retourne la meilleur, attention
+        cette méthode doit être appeler à chaque fois avant la
+        séléction !
+        :return:
+        """
         self.solutions = sorted(self.solutions, key=attrgetter('fitness'))
         if len(self.solutions) > 0:
             self.current_best = self.solutions[0]
@@ -174,10 +199,18 @@ class Population(object):
         return str(self.solutions)
 
     def selection(self):
+        """
+        Séléction elliste, attention à appeler
+         sort_and_get_best_solution pour effectuer le tris.
+        :return:
+        """
         self.selected_size = int(len(self.solutions) * self.EVOLUTION_STEP_PERCENTAGE)
         self.solutions = self.solutions[:self.selected_size]
 
     def crossover(self):
+        """
+        Effectue le croisement des paires de solutions
+        """
         children = []
         for sol_ix in range(len(self.solutions)):
             child_a, child_b = cross_between(
@@ -192,6 +225,10 @@ class Population(object):
         self.solutions = children
 
     def mutation(self):
+        """
+        Effectue les mutations sur des solutions prises au hasard
+        :return:
+        """
         n = int(len(self.solutions) * self.MUTATION_PERCENTAGE)
         indexes = random.sample(range(0, len(self.solutions)), n)
         for ix in indexes:
@@ -199,16 +236,27 @@ class Population(object):
 
 
 class Problem(object):
+    """
+    Un problème créer une solution et
+    contiens une références à toutes les villes
+    dans un dictionnaire cities.
+    """
     def __init__(self, cities={}):
         self.cities = cities
 
     def create_solution(self):
+        """
+        Créer une solution avec des
+        villes dans un ordre au hasard
+        :return: Solution
+        """
         path = list(self.cities.keys())
         random.shuffle(path)
         return Solution(problem=self, path=path)
 
 
 class Solution(object):
+
     def __init__(self, problem, path=[]):
         self.problem = problem
         self.path = path
@@ -221,13 +269,29 @@ class Solution(object):
     def __str__(self):
         return "%s : %s" % (str(self.fitness), str(self.path))
 
+    def __iter__(self):
+        return [(
+                    int(self.problem.cities[city_name].pos.x),
+                    int(self.problem.cities[city_name].pos.y)
+                ) for city_name in self.path].__iter__()
+
     def reverse_mutate(self):
+        """
+        Effectue la mutation, qui inverse le chemin
+        entre 2 villes randoms.
+        :return: nouvelles solution muté
+        """
         city_a, city_b = random.sample(range(0, len(self.path)), 2)
         new_path = reverse_sublist(self.path, city_a, city_b)
         self.compute_fitness()
         return Solution(problem=self.problem, path=new_path)
 
     def compute_fitness(self):
+        """
+        Calcule le score courant de la solution, remarquez qu'on utilise
+        les vec2 de pygame pour augmenter les performances du calcul de distance
+        :return:
+        """
         total = 0
         last_city = self.problem.cities[self.path[0]]
         for city_name in self.path[1:]:
@@ -266,7 +330,7 @@ def ga_solve(file=None, gui=True, max_time=60):
 
 
 def evolution_loop(problem, nb_solutions, max_time):
-    # Create solutions
+
     solutions = []
     current_time_left = max_time
     current_stagnation = 0
@@ -275,6 +339,7 @@ def evolution_loop(problem, nb_solutions, max_time):
 
     global global_gui
 
+    # Créations des solutions
     for i in range(nb_solutions):
         solutions.append(problem.create_solution())
 
@@ -285,12 +350,13 @@ def evolution_loop(problem, nb_solutions, max_time):
     while current_time_left > 0 and current_stagnation < MAX_STAGNATION:
         start_time = time.time()
 
+        # début d'un cycle d'évolution
         last_solution = population.sort_and_get_best_solution()
         population.selection()
         population.crossover()
         population.mutation()
-
         population.sort_and_get_best_solution()
+        # Fin d'un cycle
 
         elapsed_time = time.time() - start_time
         current_time_left -= elapsed_time
@@ -311,7 +377,7 @@ def evolution_loop(problem, nb_solutions, max_time):
             population.power_up()
             boosted = True
 
-            # print(current_best_solution)
+        # print(current_best_solution)
     return current_best_solution
 
 
@@ -320,7 +386,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--nogui', action='store_true')
     parser.add_argument('--maxtime', default=60)
-    parser.add_argument('filename')
+    parser.add_argument('filename',nargs='?',default=False)
 
     args = vars(parser.parse_args())
 
