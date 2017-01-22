@@ -150,8 +150,7 @@ class Gui(object):
         pygame.display.flip()
 
     def send_solution(self, solution):
-        solution = [sol for sol in solution]
-        self.draw(solution, draw_lines=True)
+        self.draw(solution.get_cities_pos(), draw_lines=True)
 
 
 class Population(object):
@@ -269,11 +268,12 @@ class Solution(object):
     def __str__(self):
         return "%s : %s" % (str(self.fitness), str(self.path))
 
-    def __iter__(self):
-        return [(
-                    int(self.problem.cities[city_name].pos.x),
-                    int(self.problem.cities[city_name].pos.y)
-                ) for city_name in self.path].__iter__()
+    def get_cities_pos(self):
+        return [self.get_pos(city) for city in self.path]
+
+    def get_pos(self,city_name):
+        city_pos = self.problem.cities[city_name].pos
+        return int(city_pos.x), int(city_pos.y)
 
     def reverse_mutate(self):
         """
